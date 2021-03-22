@@ -27,6 +27,7 @@ import (
 	"github.com/ethersphere/bee/pkg/resolver"
 	chequebookmock "github.com/ethersphere/bee/pkg/settlement/swap/chequebook/mock"
 	swapmock "github.com/ethersphere/bee/pkg/settlement/swap/mock"
+	transactionmock "github.com/ethersphere/bee/pkg/settlement/swap/transaction/mock"
 	"github.com/ethersphere/bee/pkg/storage"
 	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/ethersphere/bee/pkg/tags"
@@ -51,6 +52,7 @@ type testServerOptions struct {
 	SettlementOpts     []swapmock.Option
 	ChequebookOpts     []chequebookmock.Option
 	SwapOpts           []swapmock.Option
+	TransactionOpts    []transactionmock.Option
 }
 
 type testServer struct {
@@ -64,8 +66,9 @@ func newTestServer(t *testing.T, o testServerOptions) *testServer {
 	settlement := swapmock.New(o.SettlementOpts...)
 	chequebook := chequebookmock.NewChequebook(o.ChequebookOpts...)
 	swapserv := swapmock.NewApiInterface(o.SwapOpts...)
+	transaction := transactionmock.New(o.TransactionOpts...)
 	s := debugapi.New(o.Overlay, o.PublicKey, o.PSSPublicKey, o.EthereumAddress, logging.New(ioutil.Discard, 0), nil, o.CORSAllowedOrigins)
-	s.Configure(o.P2P, o.Pingpong, topologyDriver, o.Storer, o.Tags, acc, settlement, true, swapserv, chequebook)
+	s.Configure(o.P2P, o.Pingpong, topologyDriver, o.Storer, o.Tags, acc, settlement, true, swapserv, chequebook, transaction)
 	ts := httptest.NewServer(s)
 	t.Cleanup(ts.Close)
 
@@ -130,6 +133,7 @@ func TestServer_Configure(t *testing.T) {
 	settlement := swapmock.New(o.SettlementOpts...)
 	chequebook := chequebookmock.NewChequebook(o.ChequebookOpts...)
 	swapserv := swapmock.NewApiInterface(o.SwapOpts...)
+	transaction := transactionmock.New(o.TransactionOpts...)
 	s := debugapi.New(o.Overlay, o.PublicKey, o.PSSPublicKey, o.EthereumAddress, logging.New(ioutil.Discard, 0), nil, nil)
 	ts := httptest.NewServer(s)
 	t.Cleanup(ts.Close)
@@ -162,7 +166,7 @@ func TestServer_Configure(t *testing.T) {
 		}),
 	)
 
-	s.Configure(o.P2P, o.Pingpong, topologyDriver, o.Storer, o.Tags, acc, settlement, true, swapserv, chequebook)
+	s.Configure(o.P2P, o.Pingpong, topologyDriver, o.Storer, o.Tags, acc, settlement, true, swapserv, chequebook, transaction)
 
 	testBasicRouter(t, client)
 	jsonhttptest.Request(t, client, http.MethodGet, "/readiness", http.StatusOK,
